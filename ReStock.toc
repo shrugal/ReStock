@@ -1,0 +1,32 @@
+## Interface: 80100
+## Title: ReStock
+## Notes: Restock bags, bank or auction house by shopping, vendoring or crafting.
+## Version: 0-alpha1
+## SavedVariables: ReStockDB, ReStockIconDB, ReStockDebug, ReStockStore
+## RequiredDeps: TheUndermineJournal
+
+# Libs
+Libs\libs.xml
+
+# Initialization
+Init.lua
+
+# Util, Locale, Models
+Util\util.xml
+Locale\locale.xml
+Models\models.xml
+
+# Application logic
+Addon.lua
+Events.lua
+Hooks.lua
+Options.lua
+
+# Modules
+Modules\modules.xml
+
+# GUI
+GUI\gui.xml
+
+# Data
+Data\data.xml
