@@ -90,7 +90,7 @@ end
 function Self.CreateIconButton(icon, parent, onClick, desc, width, height)
     f = Self("Icon")
         .SetImage(icon:sub(1, 9) == "Interface" and icon or "Interface\\Buttons\\" .. icon .. "-Up")
-        .SetImageSize(width or 16, height or 16).SetHeight(16).SetWidth(16)
+        .SetImageSize(width or 16, height or 16).SetHeight(height or 16).SetWidth(width or 16)
         .SetCallback("OnClick", function (...) onClick(...) GameTooltip:Hide() end)
         .SetCallback("OnEnter", Self.TooltipText)
         .SetCallback("OnLeave", Self.TooltipHide)
@@ -126,8 +126,9 @@ end
 -- Display the given text as tooltip
 function Self.TooltipText(self)
     local text = self:GetUserData("text")
+    local anchor = self:GetUserData("anchor") or "ANCHOR_TOP"
     if text then
-        GameTooltip:SetOwner(self.frame, "ANCHOR_TOP")
+        GameTooltip:SetOwner(self.frame, anchor)
         GameTooltip:SetText(text)
         GameTooltip:Show()
     end
@@ -213,6 +214,13 @@ function Self.ResetLabel(self)
     self.label:SetPoint("TOPLEFT")
     self.frame:SetFrameStrata("MEDIUM")
     self.frame:SetScript("OnUpdate", nil)
+    self.OnRelease = nil
+end
+
+function Self.ResetInlineGroup(self)
+    self.frame:GetChildren():SetPoint("TOPLEFT", 0, -17)
+    self.content:SetPoint("TOPLEFT", 10, -10)
+    self.content:SetPoint("BOTTOMRIGHT", -10, 10)
     self.OnRelease = nil
 end
 

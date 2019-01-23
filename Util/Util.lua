@@ -940,10 +940,41 @@ function Self.TblFlatten(t)
     return Self.TblFoldL(t, Fn, Self.Tbl())
 end
 
--- Wipe multiple tables at once
+-- Wipe multiple tables at once, opt. recursively
 function Self.TblWipe(...)
-    for i=1,select("#", ...) do wipe((select(i, ...))) end
+    local r = (...) == true and 10 or tonumber((...)) or 0
+
+    for i=1,select("#", ...) do
+        local v = select(i, ...)
+        if type(v) == "table" then
+            if r == 0 then
+                wipe(v)
+            else
+                Self.TblWipe(r-1, v)
+            end
+        end
+    end
+
     return ...
+end
+
+-- Remove empty subtables, opt. recursively
+function Self.TblClean(t, k, r)
+    r = r == true and 10 or tonumber(r) or 0
+
+    local keys = Self.TblKeys(t)
+    for _,i in pairs(keys) do
+        if type(t[i]) == "table" then
+            if r > 0 then
+                Self.TblClean(t[i], k, r-1)
+            elseif Self.TblCount(t[i]) == 0 then
+                Self.TblRemove(t, i, k)
+            end
+        end
+    end
+    Self.TblRelease(keys)
+
+    return t
 end
 
 -- Join a table of strings

@@ -1,6 +1,6 @@
 local Name, Addon = ...
 local L = LibStub("AceLocale-3.0"):GetLocale(Name)
-local GUI, Options, Unit, Util = Addon.GUI, Addon.Options, Addon.Unit, Addon.Util
+local GUI, Options, Store, Util = Addon.GUI, Addon.Options, Addon.Store, Addon.Util
 local Self = Addon
 
 -- Echo levels
@@ -165,7 +165,7 @@ end
 -- Export the debug log
 function Self:LogExport()
     local _, name, _, _, lang, _, region = RI:GetRealmInfo(realm or GetRealmName())    
-    local txt = ("~ PersoLootRoll ~ Version: %s ~ Date: %s ~ Locale: %s ~ Realm: %s-%s (%s) ~"):format(self.VERSION, date(), GetLocale(), region, name, lang)
+    local txt = ("~ ReStock ~ Version: %s ~ Date: %s ~ Locale: %s ~ Realm: %s-%s (%s) ~"):format(self.VERSION, date(), GetLocale(), region, name, lang)
     txt = txt .. "\n" .. Util.TblConcat(self.log, "\n")
 
     GUI.ShowExportWindow("Export log", txt)

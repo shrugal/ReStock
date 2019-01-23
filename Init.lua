@@ -9,11 +9,15 @@ Addon.DEBUG = false
 
 -- Core
 Addon.Options = {}
+Addon.Price = {}
+Addon.Store = {}
 
 -- Models
 Addon.Models = {
+    Group = {},
+    Item = {},
+    Operation = {},
     Recipe = {},
-    Item = {}
 }
 
 -- Util
@@ -22,13 +26,20 @@ Addon.Unit = {}
 Addon.Util = {}
 
 -- Modules
+Addon.Auction = Addon:NewModule("Auction", nil, "AceEvent-3.0", "AceHook-3.0")
 Addon.Convert = Addon:NewModule("Convert", nil, "AceEvent-3.0", "AceHook-3.0")
-Addon.Price = Addon:NewModule("Price", nil, "AceEvent-3.0", "AceHook-3.0")
+Addon.Craft = Addon:NewModule("Craft", nil, "AceEvent-3.0", "AceHook-3.0")
+Addon.Inventory = Addon:NewModule("Inventory", nil, "AceEvent-3.0", "AceHook-3.0")
+Addon.Mail = Addon:NewModule("Mail", nil, "AceEvent-3.0", "AceHook-3.0")
 Addon.Store = Addon:NewModule("Store", nil, "AceEvent-3.0", "AceHook-3.0")
 
 -- GUI
 Addon.GUI = {
-    Main = {},
+    Main = {
+        Operations = Addon:NewModule("Operations"),
+        Items = Addon:NewModule("Items"),
+        Characters = Addon:NewModule("Characters")
+    },
     Tooltip = Addon:NewModule("Tooltip", nil, "AceHook-3.0")
 }
 

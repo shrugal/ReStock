@@ -1,12 +1,12 @@
 local Name, Addon = ...
 local L = LibStub("AceLocale-3.0"):GetLocale(Name)
 local AceGUI = LibStub("AceGUI-3.0")
-local GUI, Options, Unit, Util = Addon.GUI, Addon.Options, Addon.Unit, Addon.Util
+local GUI, Options, Store, Util = Addon.GUI, Addon.Options, Addon.Store, Addon.Util
 local Self = GUI.Main
 
-Self.TAB_OPERATIONS = "OPERATIONS"
-Self.TAB_ITEMS = "ITEMS"
-Self.TAB_CHARACTERS = "CHARACTERS"
+Self.TAB_OPERATIONS = "Operations"
+Self.TAB_ITEMS = "Items"
+Self.TAB_CHARACTERS = "Characters"
 Self.TABS = {Self.TAB_OPERATIONS, Self.TAB_ITEMS, Self.TAB_CHARACTERS}
 
 Self.frames = {}
@@ -75,45 +75,57 @@ function Self.Show(tab)
         window.versionBtn = f
 
         -- Tabs
-        local tabs = GUI("SimpleGroup")
-            .SetLayout("Flow")
+        local tabs = GUI("InlineGroup")
+            .SetLayout("LIST")
             .AddTo(window)
             .SetPoint("TOPLEFT")
-            .SetPoint("TOPRIGHT")()
+            .SetPoint("BOTTOMLEFT")
+            .SetWidth(42)()
+        tabs.frame:GetChildren():SetPoint("TOPLEFT", 0, 0)
+        GUI(tabs.content)
+            .SetPoint("TOPLEFT", 3, -3)
+            .SetPoint("BOTTOMRIGHT", -3, 3)
+        tabs.OnRelease = GUI.ResetInlineGroup
 
         Self.frames.tabs = tabs
 
         for i,tab in ipairs(Self.TABS) do
-            f = GUI("InteractiveLabel")
-                .SetText(L["TAB_" .. tab])
-                .AddTo(tabs)
-                .SetCallback("OnClick", function () Self.Show(tab) end)()
+            local tex = Util.Select(tab,
+                Self.TAB_OPERATIONS, "INV_Eng_GearspringParts",
+                Self.TAB_ITEMS, "INV_Misc_PaperPackage01b",
+                Self.TAB_CHARACTERS, "Ability_Mage_MassInvisibility"
+            )
+
+            local f = GUI.CreateIconButton("Interface\\ICONS\\" .. tex, tabs, function () Self.Show(tab) end, L["TAB_" .. tab:upper()], 35, 35)
+            f:SetUserData("anchor", "ANCHOR_CURSOR")
         end
 
         -- Main
         local main = GUI("SimpleGroup")
             .SetLayout(nil)
             .AddTo(window)
-            .SetPoint("TOPLEFT", tabs, "BOTTOMLEFT")
-            .SetPoint("BOTTOMRIGHT")
+            .SetPoint("TOPLEFT", tabs.frame, "TOPRIGHT")
+            .SetPoint("BOTTOMRIGHT")()
 
         Self.frames.main = main
 
         tab = tab or Self.TAB_OPERATIONS
-    else
-        Self.frames.window.frame:Show()
     end
+    
+    Self.frames.window.frame:Show()
 
     -- TAB
 
-    if not tab or Self.tab == tab then
-        return
-    elseif Self.tab then
-        Self.frames.main:ReleaseChildren()
-    end
+    if tab ~= Self.tab then
+        if Self.tab and Self[Self.tab] then
+            Self[Self.tab].Hide()
+        end
 
-    Self.tab = tab
-    Self["RenderTab" .. Util.StrUcFirst(tab:lower())]()
+        Self.tab = tab
+        if Self[tab] then
+            Self[tab].Show()
+        end
+    end
 end
 
 -- Check if the frame is currently being shown
@@ -129,16 +141,4 @@ end
 -- Toggle the frame
 function Self.Toggle()
     if Self:IsShown() then Self.Hide() else Self.Show() end
-end
-
-function Self.RenderTabOperations()
-
-end
-
-function Self.RenderTabItems()
-
-end
-
-function Self.RenderTabCharacters()
-
 end

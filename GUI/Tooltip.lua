@@ -19,28 +19,32 @@ end
 
 function Self.OnTooltipSetItem(tooltip, link, quantity)
     local id = Models.Item.GetInfo(link, "id")
+    local q = IsShiftKeyDown() and quantity or 1
+
     if id and id ~= "" then
 
         -- STOCK
 
-        local stock = Store.GetItemStockCount(id, true, true)
+        local cache = Store.GetFactionCache(Store.CAT_STOCK)
+        local stock = Store.GetItemCount(cache, id)
+
         if stock > 0 then
             LibExtraTip:AddLine(tooltip, " ", 0, 0, 0, true)
             LibExtraTip:AddDoubleLine(tooltip, L["STOCK"] .. ":", stock, 66/255, 244/255, 206/255, 1, 1, 1, true)
 
-            for unit,cache in pairs(Store.GetCache(Store.CAT_STOCK, true, true)) do
-                local num = Store.GetItemStockCount(id, cache)
+            for unit,unitCache in pairs(cache) do
+                local num = Store.GetItemCount(unitCache, id)
 
                 if num > 0 then
                     local s = ""
-                    for loc,locCache in pairs(cache) do
-                        local locNum = Store.GetItemStockCount(id, locCache)
+                    for loc,locCache in pairs(unitCache) do
+                        local locNum = Store.GetItemCount(locCache, id)
                         if locNum > 0 then
                             s = s .. (s == "" and "" or ", ") .. L["LOC_" .. loc] .. ": " .. locNum
                         end
                     end
 
-                    local class = Store.GetCache(Store.CAT_CHAR, true, true, unit)
+                    local class = Store.GetFactionCache(Store.CAT_CHAR, unit)
 
                     LibExtraTip:AddDoubleLine(tooltip, Unit.ColoredName(unit, nil, class), num .. " (" .. s .. ")", 1, 1, 1, 1, 1, 1, true)
                 end
@@ -49,28 +53,37 @@ function Self.OnTooltipSetItem(tooltip, link, quantity)
 
         -- PRICES
 
-        local marketPrice = Price.GetItemMarketPrice(id)
+        local buyoutPrice, marketPrice, historicPrice = Price.GetItemMarketPrice(id)
         local craftPrice = Price.GetItemCraftPrice(id)
         local convertPrice, method = Price.GetItemConvertValue(link)
         local sellPrice = Models.Item.GetInfo(link, "sellPrice") or 0
 
-        if marketPrice or craftPrice or convertPrice or sellPrice > 0 then
-            LibExtraTip:AddLine(tooltip, "\n" .. L["PRICE"] .. ":", 66/255, 244/255, 206/255, true)
+        if buyoutPrice or marketPrice or historicPrice or craftPrice or convertPrice or sellPrice > 0 then
+            local txt = "\n" .. L["PRICE"] .. (quantity > 1 and " (" .. q .. ")" or "") .. ":"
+            LibExtraTip:AddLine(tooltip, txt, 66/255, 244/255, 206/255, true)
+
+            if buyoutPrice then
+                LibExtraTip:AddDoubleLine(tooltip, L["BUYOUT"], LibExtraTip:GetMoneyText(buyoutPrice * q, false), .9, .8, .5, 1, 1, 1, true)
+            end
 
             if marketPrice then
-                LibExtraTip:AddDoubleLine(tooltip, L["MARKET"], LibExtraTip:GetMoneyText(marketPrice, false), .9, .8, .5, 1, 1, 1, true)
+                LibExtraTip:AddDoubleLine(tooltip, L["MARKET"], LibExtraTip:GetMoneyText(marketPrice * q, false), .9, .8, .5, 1, 1, 1, true)
+            end
+
+            if historicPrice then
+                LibExtraTip:AddDoubleLine(tooltip, L["HISTORIC"], LibExtraTip:GetMoneyText(historicPrice * q, false), .9, .8, .5, 1, 1, 1, true)
             end
 
             if craftPrice then
-                LibExtraTip:AddDoubleLine(tooltip, L["CRAFT"], LibExtraTip:GetMoneyText(craftPrice, false), .9, .8, .5, 1, 1, 1, true)
+                LibExtraTip:AddDoubleLine(tooltip, L["CRAFT"], LibExtraTip:GetMoneyText(craftPrice * q, false), .9, .8, .5, 1, 1, 1, true)
             end
 
             if convertPrice then
-                LibExtraTip:AddDoubleLine(tooltip, L["CONVERT_" .. method], LibExtraTip:GetMoneyText(convertPrice, false), .9, .8, .5, 1, 1, 1, true)
+                LibExtraTip:AddDoubleLine(tooltip, L["CONVERT_" .. method], LibExtraTip:GetMoneyText(convertPrice * q, false), .9, .8, .5, 1, 1, 1, true)
             end
 
             if sellPrice > 0 then
-                LibExtraTip:AddDoubleLine(tooltip, L["VENDOR"], LibExtraTip:GetMoneyText(sellPrice, false), .9, .8, .5, 1, 1, 1, true)
+                LibExtraTip:AddDoubleLine(tooltip, L["VENDOR"], LibExtraTip:GetMoneyText(sellPrice * q, false), .9, .8, .5, 1, 1, 1, true)
             end
         end
     end

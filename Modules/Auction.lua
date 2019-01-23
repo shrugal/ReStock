@@ -1,0 +1,3 @@
+local Name, Addon = ...
+local Models, Util = Addon.Models, Addon.Util
+local Self = Addon.Auction

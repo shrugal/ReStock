@@ -816,7 +816,7 @@ Self[Convert.METHOD_TRANSFORM] = {
         -- Magic Essence
         [10939] = 3
     },
-    ------------------ Shards ------------------=
+    ------------------ Shards ------------------
     [52721] = {
         -- Heavenly Shard
         [52720] = 1 / 3
@@ -916,7 +916,7 @@ Self[Convert.METHOD_TRANSFORM] = {
         -- Water
         [37705] = 0.1
     },
-    ------------------= Wod Fish ------------------
+    ------------------ Wod Fish ------------------
     [109137] = {
         [111601] = 4, -- Enormous Crescent Saberfish
         [111595] = 2, -- Crescent Saberfish
@@ -1123,7 +1123,7 @@ Self[Convert.METHOD_TRADE] = {
 -------------------------------------------------------
 
 Self[Convert.METHOD_DISENCHANT] = {
-    ------------------= Dust ------------------
+    ------------------ Dust ------------------
     [10940] = {
         -- Strange Dust
         {type = ARMOR, quality = 2, min = 5, max = 15, amount = 1.222},
@@ -1206,7 +1206,7 @@ Self[Convert.METHOD_DISENCHANT] = {
         {type = WEAPON, quality = 3, min = 182, max = 999, amount = 1.425},
         {type = WEAPON, quality = 4, min = 300, max = 999, amount = 1.000}
     },
-    ------------------= Essence ------------------
+    ------------------ Essence ------------------
     [10938] = {
         -- lesser Magic Essence
         {type = ARMOR, quality = 2, min = 5, max = 15, amount = 0.303},
@@ -1274,7 +1274,7 @@ Self[Convert.METHOD_DISENCHANT] = {
         {type = WEAPON, quality = 2, min = 112, max = 113, amount = 0.244},
         {type = WEAPON, quality = 2, min = 114, max = 115, amount = 0.333}
     },
-    ------------------= Shard ------------------
+    ------------------ Shard ------------------
     [14343] = {
         -- Small Brilliant Shard
         {type = ARMOR, quality = 2, min = 26, max = 45, amount = 0.033},
@@ -1356,7 +1356,7 @@ Self[Convert.METHOD_DISENCHANT] = {
         {type = WEAPON, quality = 3, min = 182, max = 999, amount = 1.500},
         {type = WEAPON, quality = 4, min = 300, max = 999, amount = 1.200}
     },
-    ------------------= Crystal ------------------
+    ------------------ Crystal ------------------
     [22450] = {
         -- Void Crystal
         {type = ARMOR, quality = 4, min = 73, max = 94, amount = 1.470},

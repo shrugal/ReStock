@@ -18,7 +18,6 @@ function Self.RegisterEvents()
     Addon:RegisterEvent("ITEM_PUSH")
     Addon:RegisterEvent("ITEM_LOCKED")
     Addon:RegisterEvent("ITEM_UNLOCKED")
-    Addon:RegisterEvent("BAG_UPDATE_DELAYED")
 end
 
 function Self.UnregisterEvents()
@@ -26,7 +25,6 @@ function Self.UnregisterEvents()
     Addon:UnregisterEvent("ITEM_PUSH")
     Addon:UnregisterEvent("ITEM_LOCKED")
     Addon:UnregisterEvent("ITEM_UNLOCKED")
-    Addon:UnregisterEvent("BAG_UPDATE_DELAYED")
 end
 
 -------------------------------------------------------
@@ -54,12 +52,4 @@ function Self:ITEM_UNLOCKED(event, bagOrEquip, slot)
     Util.TblRelease(pos)
     for _,t in pairs(Self.lastLocked) do Util.TblRelease(t) end
     wipe(Self.lastLocked)
-end
-
-function Self:BAG_UPDATE_DELAYED(event)
-    for i, entry in pairs(Models.Item.queue) do
-        Addon:CancelTimer(entry.timer)
-        entry.fn(unpack(entry.args))
-    end
-    wipe(Models.Item.queue)
 end

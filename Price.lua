@@ -67,7 +67,7 @@ end
 -- @param table stack Item ids being looked up recursively to prevent loops
 -- @return float Current crafting price
 function Self.GetItemCraftPrice(item, owned, stack)
-    local recipes = Store.GetItemCraftRecipes(item)
+    local recipes = Store.GetItemRecipes(nil, item)
     if recipes then
         local price
         for recipeId,recipe in pairs(recipes) do
@@ -108,7 +108,7 @@ end
 -- @param int|string item Item id, string or link
 -- @return float Current conversion result price
 function Self.GetItemConvertValue(item)
-    item = Models.Item.FromLink((select(2, GetItemInfo(item)))):GetBasicInfo()
+    item = Models.Item.Create(item):GetBasicInfo()
     local price, method
 
     for m,items in pairs(Addon.Data.Conversions) do
@@ -157,7 +157,7 @@ end
 function Self.GetRecipePrice(recipe, owned, stack)
     local price = 0
     for matId,matNum in pairs(recipe.mats) do
-        price = price + matNum * Self.GetItemPrice(matId, owned, stack)
+        price = price + (matNum or 1) * (Self.GetItemPrice(matId, owned, stack) or 0)
     end    
     return price
 end
