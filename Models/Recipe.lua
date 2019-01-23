@@ -1,52 +1,39 @@
 local Name, Addon = ...
-local Data, Models, Store, Util = Addon.Data, Addon.Models, Addon.Store, Addon.Util
-local Super = Models.Model
-local Self = Models.Recipe
+local Data, Models, Store, Util = Addon:Import("Data", "Models", "Store", "Util")
+local Self, Super = Util.TblClass(Models.Model, Models.Recipe)
 
-Self.__index = Self
-setmetatable(Self, Super)
-
-Self.STORE = Store.CAT_RECIPE
+Self.STORE = "RECIPE"
 Self.REF = "rcp"
 
 -------------------------------------------------------
 --                      Static                       --
 -------------------------------------------------------
 
-function Self:Create(id, itemId, itemNum, mats)
-    return Super.Create(Self,
-        "id", tonumber(id),
-        "itemId", tonumber(itemId),
-        "itemNum", tonumber(itemNum),
-        "mats", mats
-    )
-end
-
 -- fetch a model from the store
-function Self:Fetch(id)
+function Self.Fetch(Static, id)
     id = tonumber(id)
 
     local itemLink = C_TradeSkillUI.GetRecipeItemLink(id)
     if itemLink then
-        local itemId = Data.Crafts.ENCHANT_SCROLLS[id] or Models.Item.GetInfo(itemLink, "id")
+        local itemId = Data.Crafts.ENCHANT_SCROLLS[id] or Models.Item:GetInfo(itemLink, "id")
         local itemNum = C_TradeSkillUI.GetRecipeNumItemsProduced(id) or 1
     
         local mats = Util.Tbl()
         for i=1,C_TradeSkillUI.GetRecipeNumReagents(id) do
-            local matId = tonumber(Models.Item.GetInfo(C_TradeSkillUI.GetRecipeReagentItemLink(id, i), "id"))
+            local matId = tonumber(Models.Item:GetInfo(C_TradeSkillUI.GetRecipeReagentItemLink(id, i), "id"))
             local matNum = tonumber((select(3, C_TradeSkillUI.GetRecipeReagentInfo(id, i))))
             mats[matId] = matNum
         end
 
-        return Self:Create(id, itemId, itemNum, mats)
+        return Static(id, itemId, itemNum, mats)
     else
-        return Super.Fetch(Self, id)
+        return Super.Fetch(Static, id)
     end
 end
 
 -- Create a new instance from table, int or string representation
-function Self:Decode(data)
-    if type(data) == "string" and not tonumber(data) then
+function Self.Decode(Static, data)
+    if type(data) == "string" and not (tonumber(data) or Static:IsReference(data)) then
         local recipeId, item, mats = strsplit(":", data)
         local itemNum, itemId = strsplit("x", item)
     
@@ -56,15 +43,27 @@ function Self:Decode(data)
             t[tonumber(matId)] = tonumber(matNum)
         end
     
-        return Self:Create(recipeId, itemId, itemNum, t)
+        return Static(recipeId, itemId, itemNum, t)
     else
-        return Super.Decode(Self, data)
+        return Super.Decode(Static, data)
     end
+end
+
+-- Get store path for a model
+function Self.GetStoreRoot(Static, ...)
+    return Static.STORE, ...
 end
 
 -------------------------------------------------------
 --                       Members                     --
 -------------------------------------------------------
+
+function Self:Create(id, itemId, itemNum, mats)
+    self.id = tonumber(id)
+    self.itemId = tonumber(itemId)
+    self.itemNum = tonumber(itemNum)
+    self.mats = mats
+end
 
 -- Encode the instance for storage
 function Self:Encode()
@@ -75,3 +74,16 @@ function Self:Encode()
     return self.id .. ":" .. self.itemNum .. "x" .. self.itemId .. ":" .. mats
 end
 Self.__tostring = Self.Encode
+
+-- Store the instance, as well as a reference from the crafted item in the char's crafting line
+function Self:Store(line)
+    Super.Store(self)
+
+    if line then
+        local cache = Store.GetUnit(Store.CAT_CRAFT, line) or Util.Tbl()
+        cache[self.itemId] = (cache[self.itemId] and cache[self.itemId] .. "," or "") .. self.id
+        Store.SetUnit(Store.CAT_CRAFT, line, cache)
+    end
+
+    return self
+end

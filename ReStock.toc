@@ -11,19 +11,11 @@ Libs\libs.xml
 # Initialization
 Init.lua
 
-# Util, Locale, Models
+# All the rest
 Util\util.xml
 Locale\locale.xml
 Models\models.xml
-
-# Core
-Addon.lua
-Events.lua
-Hooks.lua
-Options.lua
-Price.lua
-
-# Modules, GUI, data
+Core\core.xml
 Modules\modules.xml
 GUI\gui.xml
 Data\data.xml

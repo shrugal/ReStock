@@ -1,30 +1,24 @@
 local Name, Addon = ...
-local Data, Models, Store, Util = Addon.Data, Addon.Models, Addon.Store, Addon.Util
-local Super = Models.Model
-local Self = Models.Operation
+local Data, Models, Store, Util = Addon:Import("Data", "Models", "Store", "Util")
+local Self, Super = Util.TblClass(Models.Model, Models.Operation)
 
-Self.__index = Self
-setmetatable(Self, Super)
-
-Self.STORE = Store.CAT_OPERATION
+Self.STORE = "OPERATION"
 Self.REF = "op"
 
 -------------------------------------------------------
 --                      Static                       --
 -------------------------------------------------------
 
--- Create a new instance
-function Self:Create(item, char, loc, amount, options)
-    return Super.Create(Self, 
-        "item", item,
-        "char", char,
-        "loc", loc,
-        "amount", tonumber(amount) or 0,
-        "options", options or Util.Tbl()
-    )
-end
-
 -------------------------------------------------------
 --                       Members                     --
 -------------------------------------------------------
+
+-- Create a new instance
+function Self:Create(item, char, loc, amount, options)
+    self.item = item
+    self.char = char
+    self.loc = loc
+    self.amount = tonumber(amount) or 0
+    self.options = options
+end
 

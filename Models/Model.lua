@@ -1,8 +1,6 @@
 local Name, Addon = ...
-local Models, Store, Util = Addon.Models, Addon.Store, Addon.Util
-local Self = Models.Model
-
-Self.__index = Self
+local Models, Store, Util = Addon:Import("Models", "Store", "Util")
+local Self, Super = Util.TblClass(nil, Models.Model)
 
 Self.STORE = nil
 Self.REF = nil
@@ -10,11 +8,6 @@ Self.REF = nil
 -------------------------------------------------------
 --                      Static                       --
 -------------------------------------------------------
-
--- Create a new instance
-function Self.Create(Static, ...)
-    return setmetatable(Util.TblHash(...), Static)
-end
 
 -- Get a list of models form the store
 function Self.Find(Static, ...)
@@ -28,7 +21,7 @@ end
 
 -- Fetch a model from the store
 function Self.Fetch(Static, ...)
-    return Model:Decode(Static:Find(...))
+    return Static:Decode(Static:Find(...))
 end
 
 -- Create a new instance from table, int or string representation
@@ -54,7 +47,7 @@ function Self.IsReference(Static, ref)
         if Static == Self then
             if ref:find(":") then
                 for _,Model in pairs(Models) do
-                    if Model.REF and (...):find(Model.REF .. ":") == 1 then
+                    if Model.REF and ref:find(Model.REF .. ":") == 1 then
                         return Model
                     end
                 end
@@ -69,6 +62,14 @@ end
 --                       Members                     --
 -------------------------------------------------------
 
+-- Create a new instance
+function Self:Create(...)
+    for i=1, select("#", ...), 2 do
+        local k, v = select(i, ...)
+        self[k] = v
+    end
+end
+
 -- Encode the instance for storage
 function Self:Encode()
     return self
@@ -81,12 +82,12 @@ end
 
 -- Get the full instance path in the store
 function Self:GetFullStorePath(id)
-    return strjoin(".", self:GetStoreRoot(self:GetStorePath(id)))
+    return Util.StrJoin(".", self:GetStoreRoot(self:GetStorePath(id)))
 end
 
 -- Get a reference string for this instance
 function Self:GetReference()
-    return strjoin(":", self.REF, self:GetStorePath(true))
+    return Util.StrJoin(":", self.REF, self:GetStorePath(true))
 end
 
 -- Store the instance

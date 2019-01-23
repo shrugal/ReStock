@@ -1,12 +1,8 @@
 local Name, Addon = ...
-local Models, Store, Util = Addon.Models, Addon.Store, Addon.Util
-local Super = Models.Model
-local Self = Models.Group
+local Models, Store, Util = Addon:Import("Models", "Store", "Util")
+local Self, Super = Util.TblClass(Models.Model, Models.Group)
 
-Self.__index = Self
-setmetatable(Self, Super)
-
-Self.STORE = Store.CAT_GROUP
+Self.STORE = "GROUP"
 Self.REF = "grp"
 
 -- Group child types
@@ -17,19 +13,17 @@ Self.TYPE_CHARS = "CHARS"
 --                      Static                       --
 -------------------------------------------------------
 
--- Create a new instance
-function Self:Create(name, childType, children, subgroups)
-    return Super.Create(Self, 
-        "name", name,
-        "childType", childType or Self.TYPE_ITEMS,
-        "children", children or Util.Tbl(),
-        "subgroups", subgroups or Util.Tbl()
-    )
-end
-
 -------------------------------------------------------
 --                       Members                     --
 -------------------------------------------------------
+
+-- Create a new instance
+function Self:Create(name, childType, children, subgroups)
+    self.name = name
+    self.childType = childType or Self.TYPE_ITEMS
+    self.children = children or Util.Tbl()
+    self.subgroups = subgroups or Util.Tbl()
+end
 
 -- Get the instance path under the store root
 function Self:GetStorePath(id)

@@ -216,6 +216,7 @@ function Self.TblHash(...)
     end
     return t
 end
+
 -- Add one or more tables to the cache, first parameter can define a recursive depth
 function Self.TblRelease(...)
     local depth = type(...) ~= "table" and (type(...) == "number" and max(0, (...)) or ... and Self.tblPoolSize) or 0
@@ -241,6 +242,12 @@ function Self.TblRelease(...)
     end
 end
 
+-- Small helper to release a table and return its unpacked content
+function Self.TblReleaseReturn(t, ...)
+    Self.TblRelease(t)
+    return ...
+end
+
 -- TEMPORARY TABLES: Tables that are automatically released after certain operations (such as loops)
 
 function Self.TblTmp(...)
@@ -260,6 +267,38 @@ function Self.TblReleaseTmp(...)
         local t = select(i, ...)
         if type(t) == "table" and Self.TblIsTmp(t) then Self.TblRelease(t) end
     end
+end
+
+-- CLASS SYSTEM
+
+Self.TBL_CLASS = {}
+Self.TBL_CLASS.__index = Self.TBL_CLASS
+Self.TBL_CLASS.__call = function (Static, ...)
+    local self = Self.Tbl()
+    setmetatable(self, Static)
+    if self.Create then self:Create(...) end
+    return self
+end
+
+function Self.TblClass(super, self)
+    super = super or Self.TBL_CLASS
+    self = self or Self.Tbl()
+    self.__index = self
+    self.__call = Self.TBL_CLASS.__call
+    return setmetatable(self, super), super
+end
+
+function Self.TblIsClassOf(self, super)
+    super = super or Self.TBL_CLASS
+    while type(self) == "table" do
+        if self == super then return true end
+        self = getmetatable(self)
+    end
+    return false
+end
+
+function Self.TblIsInstanceOf(self, super)
+    return type(self) == "table" and not rawget(self, "__index") and Self.TblIsClassOf(self, super)
 end
 
 -- GET/SET

@@ -7,6 +7,13 @@ Addon.ABBR = "RS"
 Addon.VERSION = tonumber(Version) or Version
 Addon.DEBUG = false
 
+-- Import function
+function Addon:Import(...)
+    local t = Addon.Util.Tbl(...)
+    for i,v in pairs(t) do t[i] = Addon.Util.TblGet(self, v) end
+    return Addon.Util.TblReleaseReturn(t, unpack(t))
+end
+
 -- Core
 Addon.Options = {}
 Addon.Price = {}
@@ -14,6 +21,7 @@ Addon.Store = {}
 
 -- Models
 Addon.Models = {
+    Model = {},
     Group = {},
     Item = {},
     Operation = {},

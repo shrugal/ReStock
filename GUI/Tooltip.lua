@@ -18,14 +18,14 @@ function Self:OnDisable()
 end
 
 function Self.OnTooltipSetItem(tooltip, link, quantity)
-    local id = Models.Item.GetInfo(link, "id")
+    local id = Models.Item:GetInfo(link, "id")
     local q = IsShiftKeyDown() and quantity or 1
 
     if id and id ~= "" then
 
         -- STOCK
 
-        local cache = Store.GetFactionCache(Store.CAT_STOCK)
+        local cache = Store.GetFaction(Store.CAT_STOCK)
         local stock = Store.GetItemCount(cache, id)
 
         if stock > 0 then
@@ -44,7 +44,7 @@ function Self.OnTooltipSetItem(tooltip, link, quantity)
                         end
                     end
 
-                    local class = Store.GetFactionCache(Store.CAT_CHAR, unit)
+                    local class = Store.GetFaction(Store.CAT_CHAR, unit)
 
                     LibExtraTip:AddDoubleLine(tooltip, Unit.ColoredName(unit, nil, class), num .. " (" .. s .. ")", 1, 1, 1, 1, 1, 1, true)
                 end
@@ -56,7 +56,7 @@ function Self.OnTooltipSetItem(tooltip, link, quantity)
         local buyoutPrice, marketPrice, historicPrice = Price.GetItemMarketPrice(id)
         local craftPrice = Price.GetItemCraftPrice(id)
         local convertPrice, method = Price.GetItemConvertValue(link)
-        local sellPrice = Models.Item.GetInfo(link, "sellPrice") or 0
+        local sellPrice = Models.Item:GetInfo(link, "sellPrice") or 0
 
         if buyoutPrice or marketPrice or historicPrice or craftPrice or convertPrice or sellPrice > 0 then
             local txt = "\n" .. L["PRICE"] .. (quantity > 1 and " (" .. q .. ")" or "") .. ":"

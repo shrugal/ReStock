@@ -15,8 +15,6 @@ Self.REALM = GetRealmName("player")
 Self.FACTION = UnitFactionGroup("player")
 Self.UNIT = UnitName("player")
 
-Self.storage = nil
-
 -------------------------------------------------------
 --                    Addon stuff                    --
 -------------------------------------------------------

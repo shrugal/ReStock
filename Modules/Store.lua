@@ -1,18 +1,19 @@
 local Name, Addon = ...
-local Craft, Inventory, Models, Unit, Util = Addon.Craft, Addon.Inventory, Addon.Models, Addon.Unit, Addon.Util
+local Craft, Inventory, Models, Unit, Util = Addon:Import("Craft", "Inventory", "Models", "Unit", "Util")
 local Self = Addon.Store
 
 -- Cache categories
+Self.CAT_GROUP = Models.Group.STORE
+Self.CAT_ITEM = Models.Item.STORE
+Self.CAT_OPERATION = Models.Operation.STORE
+Self.CAT_RECIPE = Models.Recipe.STORE
+Self.CAT_TASK = "TASK" -- TODO
+
 Self.CAT_CHAR = "CHAR"
 Self.CAT_CRAFT = "CRAFT"
 Self.CAT_CURRENCY = "CURRENCY"
-Self.CAT_GROUP = "GROUP"
-Self.CAT_ITEM = "ITEM"
 Self.CAT_ITEMS = "ITEMS"
-Self.CAT_OPERATION = "OPERATION"
-Self.CAT_RECIPE = "RECIPE"
 Self.CAT_STOCK = "STOCK"
-Self.CAT_TASK = "TASK"
 
 -- Stock locations
 Self.LOC_BAGS = "BAGS"
@@ -45,7 +46,7 @@ end
 
 -- Get stock count for an item
 function Self.GetItemCount(cache, item)
-    local id = tonumber(item) or Models.Item.GetInfo(item, "id")
+    local id = tonumber(item) or Models.Item:GetInfo(item, "id")
 
     if not (id and cache) then
         return 0
@@ -66,11 +67,14 @@ end
 
 -- Increment stock count for an item
 function Self.IncItemCount(cache, item, inc)
-    local id = tonumber(item) or Models.Item.GetInfo(item, "id")
-    local itemType = Models.Item.GetInfo(item, "type")
+    local id = tonumber(item) or Models.Item:GetInfo(item, "id")
     inc = inc or 1
 
-    if id and inc and not (itemType == "Quest" or Self.IGNORE[Self.CAT_STOCK][id]) then
+    if id and inc and not (
+        Self.IGNORE[Self.CAT_STOCK][id]
+        or Models.Item:GetInfo(item, "type") == "Quest"
+        or Models.Item:GetInfo(item, "quality") == LE_ITEM_QUALITY_POOR
+    ) then
         local count = (cache and cache[id] or 0) + inc
         if count > 0 or cache then
             cache = cache or Util.Tbl()
@@ -87,14 +91,14 @@ end
 
 -- Get a list of craft recipes with mats for an item
 function Self.GetItemRecipes(cache, item)
-    cache = cache or Self.GetFactionCache(Self.CAT_CRAFT)
-    local id = tonumber(item) or Models.Item.GetInfo(item, "id")
+    cache = cache or Self.GetFaction(Self.CAT_CRAFT)
+    local id = tonumber(item) or Models.Item:GetInfo(item, "id")
     local t = Util.Tbl()
     
     if cache then
         if type(cache[id]) == "string" then
             for i,recipeId in Util.Each(strsplit(",", cache[id])) do
-                t[tonumber(recipeId)] = Models.Recipe.FromId(recipeId)
+                t[tonumber(recipeId)] = Models.Recipe:Fetch(recipeId)
             end
         else
             for i,v in pairs(cache) do
@@ -155,11 +159,11 @@ ITEMS:
 ]]
 
 -- Get a cache or cache entry
-function Self.GetCache(cat, ...)
+function Self.Get(cat, ...)
     if cat == Self.CAT_STOCK then
         local realm, faction, unit, bag = ...
         if tonumber(bag) then
-            return Self.GetCache(cat, realm, faction, unit, Inventory.GetBagLoc(bag), tonumber(bag), select(5, ...))
+            return Self.Get(cat, realm, faction, unit, Inventory.GetBagLoc(bag), tonumber(bag), select(5, ...))
         end
     end
 
@@ -167,26 +171,24 @@ function Self.GetCache(cat, ...)
 end
 
 -- Set a cache or cache entry
-function Self.SetCache(cat, ...)
+function Self.Set(cat, ...)
     if cat == Self.CAT_STOCK then
         local realm, faction, unit, bag = ...
         if tonumber(bag) then
-            return Self.SetCache(cat, realm, faction, unit, Inventory.GetBagLoc(bag), tonumber(bag), select(5, ...))
+            return Self.Set(cat, realm, faction, unit, Inventory.GetBagLoc(bag), tonumber(bag), select(5, ...))
         end
     end
 
     return Util.TblSet(Self.cache, cat, ...)
 end
 
--- Raw get and set cache and for the current realm/faction/unit
-function Self.Get(...) return Util.TblGet(Self.cache, ...) end
-function Self.Set(...) return Util.TblSet(Self.cache, ...) end
-function Self.GetRealmCache(cat, ...) return Self.GetCache(cat, Addon.REALM, ...) end
-function Self.SetRealmCache(cat, ...) return Self.SetCache(cat, Addon.REALM, ...) end
-function Self.GetFactionCache(cat, ...) return Self.GetCache(cat, Addon.REALM, Addon.FACTION, ...) end
-function Self.SetFactionCache(cat, ...) return Self.SetCache(cat, Addon.REALM, Addon.FACTION, ...) end
-function Self.GetCharCache(cat, ...) return Self.GetCache(cat, Addon.REALM, Addon.FACTION, Addon.UNIT, ...) end
-function Self.SetCharCache(cat, ...) return Self.SetCache(cat, Addon.REALM, Addon.FACTION, Addon.UNIT, ...) end
+-- Get and set for the current realm/faction/unit
+function Self.GetRealm(cat, ...) return Self.Get(cat, Addon.REALM, ...) end
+function Self.SetRealm(cat, ...) return Self.Set(cat, Addon.REALM, ...) end
+function Self.GetFaction(cat, ...) return Self.Get(cat, Addon.REALM, Addon.FACTION, ...) end
+function Self.SetFaction(cat, ...) return Self.Set(cat, Addon.REALM, Addon.FACTION, ...) end
+function Self.GetUnit(cat, ...) return Self.Get(cat, Addon.REALM, Addon.FACTION, Addon.UNIT, ...) end
+function Self.SetUnit(cat, ...) return Self.Set(cat, Addon.REALM, Addon.FACTION, Addon.UNIT, ...) end
 
 -------------------------------------------------------
 --                    Update cache                   --
@@ -196,21 +198,21 @@ function Self.SetCharCache(cat, ...) return Self.SetCache(cat, Addon.REALM, Addo
 
 -- Update auction items
 function Self.UpdateAuctions()
-    local cache = Util.TblWipe(Self.GetCharCache(Self.CAT_STOCK, Self.LOC_AUCTIONS))
+    local cache = Util.TblWipe(Self.GetUnit(Self.CAT_STOCK, Self.LOC_AUCTIONS))
 
     for slot=1,GetNumAuctionItems("owner") do
         local _, _, count, _, _, _, _, _, _, _, _, _, _, _, _, _, id = GetAuctionItemInfo("owner", slot)
         cache = Self.IncItemCount(cache, id, count)
     end
 
-    Self.SetCharCache(Self.CAT_STOCK, Self.LOC_AUCTIONS, cache)
+    Self.SetUnit(Self.CAT_STOCK, Self.LOC_AUCTIONS, cache)
 end
 
 -- INVENTORY
 
 -- Update one bag
 function Self.UpdateBag(bag)
-    local cache = Util.TblWipe(Self.GetCharCache(Self.CAT_STOCK, bag))
+    local cache = Util.TblWipe(Self.GetUnit(Self.CAT_STOCK, bag))
 
     if GetContainerNumSlots(bag) > 0 then
         for slot=1,GetContainerNumSlots(bag) do
@@ -218,7 +220,7 @@ function Self.UpdateBag(bag)
             cache = Self.IncItemCount(cache, id, count)
         end
 
-        Self.SetCharCache(Self.CAT_STOCK, bag, cache)
+        Self.SetUnit(Self.CAT_STOCK, bag, cache)
     end
 end
 
@@ -250,7 +252,7 @@ function Self.UpdateMail()
     -- We can only reliably update the cache if we can check every mail
     local curr, total = GetInboxNumItems()
     if curr <= total then
-        local cache = Util.TblWipe(Self.GetCharCache(Self.CAT_STOCK, Self.LOC_MAIL))
+        local cache = Util.TblWipe(Self.GetUnit(Self.CAT_STOCK, Self.LOC_MAIL))
 
         for slot=1,curr do
             for item=1,ATTACHMENTS_MAX_RECEIVE do
@@ -259,13 +261,13 @@ function Self.UpdateMail()
             end
         end
 
-        Self.SetCharCache(Self.CAT_STOCK, Self.LOC_MAIL, cache)
+        Self.SetUnit(Self.CAT_STOCK, Self.LOC_MAIL, cache)
     end
 end
 
 -- Update mail items when sending
 function Self.UpdateMailSend(unit)
-    local cache = Self.GetFactionCache(Self.LOC_MAIL, unit)
+    local cache = Self.GetFaction(Self.LOC_MAIL, unit)
 
     for slot=1,ATTACHMENTS_MAX_SEND do
         if HasSendMailItem(slot) then
@@ -274,17 +276,17 @@ function Self.UpdateMailSend(unit)
         end
     end
 
-    Self.SetFactionCache(Self.CAT_STOCK, unit, Self.LOC_MAIL, cache)
+    Self.SetFaction(Self.CAT_STOCK, unit, Self.LOC_MAIL, cache)
 end
 
 -- Update mail items when canceling auctions
 function Self.UpdateMailAuctionCanceled(slot)
-    local cache = Self.GetCharCache(Self.CAT_STOCK, Self.LOC_MAIL)
+    local cache = Self.GetUnit(Self.CAT_STOCK, Self.LOC_MAIL)
 
     local _, _, count, _, _, _, _, _, _, _, _, _, _, _, _, _, id = GetAuctionItemInfo("owner", slot)
     cache = Self.IncItemCount(cache, id, count)
 
-    Self.SetCharCache(Self.CAT_STOCK, Self.LOC_MAIL, cache)
+    Self.SetUnit(Self.CAT_STOCK, Self.LOC_MAIL, cache)
 end
 
 -- CRAFT
@@ -293,30 +295,20 @@ function Self.UpdateRecipes()
     if not Craft.IsInfoAvailable() then return end
 
     local line = Craft.GetCurrentLine()
-
-    local cache = Util.TblWipe(Self.GetCharCache(Self.CAT_CRAFT, line))
+    Util.TblWipe(Self.GetUnit(Self.CAT_CRAFT, line))
 
     local info = Util.Tbl()
     for i,recipeId in pairs(C_TradeSkillUI.GetAllRecipeIDs()) do
         C_TradeSkillUI.GetRecipeInfo(recipeId, info)
 
         if info.craftable and info.learned then
-            -- Save recipe
-            local recipe = Models.Recipe.FromId(recipeId):Store()
-
-            -- Save item->recipe index
-            cache = cache or Util.Tbl()
-            cache[recipe.itemId] = (cache[recipe.itemId] and cache[recipe.itemId] .. "," or "") .. recipeId
-
-            recipe:Release()
+            Models.Recipe:Fetch(recipeId):Store(line):Release()
         end
     end
 
-    Util.TblRelease(info)
-
-    -- Save cache
-    Self.SetCharCache(Self.CAT_CRAFT, line, cache)
+    -- Save last update and cleanup
     Util.TblSet(Self.lastUpdate, Self.CAT_CRAFT, line, time())
+    Util.TblRelease(info)
 end
 
 -------------------------------------------------------
@@ -328,9 +320,8 @@ function Self:OnEnable()
     ReStockStore = ReStockStore or Util.Tbl()
     Self.cache = ReStockStore
 
-    -- Update char info and bags
-    Self.SetCharCache(Self.CAT_CHAR, (select(2, UnitClass("player"))))
-    Self.UpdateBags()
+    -- Update char info
+    Self.SetUnit(Self.CAT_CHAR, (select(2, UnitClass("player"))))
 
     -- Events
     Self:RegisterEvent("AUCTION_OWNED_LIST_UPDATE", Self.UpdateAuctions)
@@ -375,7 +366,7 @@ end
 
 function Self:OnSendMail(unit)
     unit = Unit.ShortName(unit)
-    if Self.GetFactionCache(Self.CAT_CHAR, unit) then
+    if Self.GetFaction(Self.CAT_CHAR, unit) then
         Self.UpdateMailSend(unit)
     end
 end

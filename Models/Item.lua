@@ -1,12 +1,8 @@
 local Name, Addon = ...
-local Models, Unit, Util = Addon.Models, Addon.Unit, Addon.Util
-local Super = Models.Model
-local Self = Models.Item
+local Models, Store, Unit, Util = Addon:Import("Models", "Store", "Unit", "Util")
+local Self, Super = Util.TblClass(Models.Model, Models.Item)
 
-Self.__index = Self
-setmetatable(Self, Super)
-
-Self.STORE = Store.CAT_ITEM
+Self.STORE = "ITEM"
 Self.REF = "item"
 
 -- For editor auto-completion:
@@ -94,33 +90,30 @@ Self.INFO = {
 --                      Static                       --
 -------------------------------------------------------
 
--- Create an item instance from a link or id
-function Self.Create(item, bagOrEquip, slot)
-    return Super.Create(Self,
-        "id", Self.GetInfo(item, "id"),
-        "link", Self.GetInfo(item, "link"),
-        "infoLevel", Self.INFO_NONE,
-        "bagOrEquip", bagOrEquip,
-        "slot", slot
-    )
+function Self.Decode(Static, data)
+    if Static:IsLink(data) then
+        return Static(data)
+    else
+        return Super.Decode(Static, data)
+    end
 end
 
 -- Create an item instance for the given equipment slot
-function Self.FromSlot(slot, unit)
+function Self.FromSlot(Static, slot, unit)
     local link = GetInventoryItemLink(unit or "player", slot)
-    return link and Self.Create(link, slot) or nil
+    return link and Self(link, slot) or nil
 end
 
 -- Create an item instance from the given bag position
-function Self.FromBagSlot(bag, slot)
+function Self.FromBagSlot(Static, bag, slot)
     local link = GetContainerItemLink(bag, slot)
-    return link and Self.Create(link, bag, slot) or nil
+    return link and Static(link, bag, slot) or nil
 end
 
 -------------------- LINKS --------------------
 
 -- Get the item link from a string
-function Self.GetLink(str)
+function Self.GetLink(Static, str)
     if type(str) == "table" then
         return str.link
     elseif type(str) == "string" then
@@ -129,35 +122,35 @@ function Self.GetLink(str)
 end
 
 -- Get a version of the link for the given player level
-function Self.GetLinkForLevel(link, level)
+function Self.GetLinkForLevel(Static, link, level)
     local i = 0
     return link:gsub(":[^:]*", function (s)
         i = i + 1
-        if i == Self.INFO.link.linkLevel then
+        if i == Static.INFO.link.linkLevel then
             return ":" .. (level or MAX_PLAYER_LEVEL)
         end
     end)
 end
 
 -- Get a version of the link that is scaled to the given player level
-function Self.GetLinkScaled(link, level)
+function Self.GetLinkScaled(Static, link, level)
    local i, numBonusIds = 0, 1
    return link:gsub(":([^:]*)", function (s)
          i = i + 1
-         if i == Self.INFO.link.numBonusIds then
+         if i == Static.INFO.link.numBonusIds then
             numBonusIds = tonumber(s) or 0
-         elseif i == Self.INFO.link.upgradeLevel - 1 + numBonusIds then
+         elseif i == Static.INFO.link.upgradeLevel - 1 + numBonusIds then
             return ":" .. (level or MAX_PLAYER_LEVEL)
          end
    end)
 end
 
 -- Check if string is an item link
-function Self.IsLink(str)
-    str = Self.GetLink(str)
+function Self.IsLink(Static, str)
+    str = Static:GetLink(str)
 
     if type(str) == "string" then
-        local i, j = str:find(Self.PATTERN_LINK)
+        local i, j = str:find(Static.PATTERN_LINK)
         return i == 1 and j == str:len()
     else
         return false
@@ -220,11 +213,18 @@ local scanFn = function (i, line, lines, attr)
     end
 end
 
-function Self.GetInfo(item, attr, ...)
-    local isInstance = type(item) == "table" and item.link and true
-    local id = isInstance and item.id or tonumber(item)
-    local link = isInstance and item.link or Self.IsLink(item) and item
-    item = isInstance and item or link or id
+function Self.GetInfo(Static, item, attr)
+    item = attr and item or Static
+    Static = rawget(Static, "__index") and Static or getmetatable(Static)
+    attr = attr or item
+
+    local self, id, link = type(item) == "table" and item
+    if self then
+        id, link = self.id, self.link
+    else
+        id, link = tonumber(item), Static:IsLink(item) and item or nil
+        item = link or id
+    end
 
     if not item then
         return
@@ -233,37 +233,38 @@ function Self.GetInfo(item, attr, ...)
         return id
     -- quality
     elseif attr == "quality" then
-        local color = Self.GetInfo(item, "color")
+        local color = Static:GetInfo(item, "color")
         -- This is a workaround for epic item links having color "a335ee", but ITEM_QUALITY_COLORS has "a334ee"
         return color == "a335ee" and 4 or color and Util.TblFindWhere(ITEM_QUALITY_COLORS, "hex", "|cff" .. color) or 1
     -- level, baseLevel, realLevel
-    elseif Util.In(attr, "level", "baseLevel") or attr == "realLevel" and not Self.IsScaled(item) then
+    elseif Util.In(attr, "level", "baseLevel") or attr == "realLevel" and not Static:IsScaled(item) then
         return (select(attr == "baseLevel" and 3 or 1, GetDetailedItemLevelInfo(link or id)))
     -- realMinLevel
-    elseif attr == "realMinLevel" and not Self.IsScaled(item) then
-        return (select(Self.INFO.basic.minLevel, GetItemInfo(link or id)))
+    elseif attr == "realMinLevel" and not Static:IsScaled(item) then
+        return (select(Static.INFO.basic.minLevel, GetItemInfo(link or id)))
     -- maxLevel
     elseif attr == "maxLevel" then
-        if Self.GetInfo(item, "quality") == LE_ITEM_QUALITY_HEIRLOOM then
-            return Self.GetInfo(Self.GetLinkForLevel(link, Self.GetInfo(item, "toLevel")), "level", ...)
+        if Static:GetInfo(item, "quality") == LE_ITEM_QUALITY_HEIRLOOM then
+            return Static:GetInfo(Static:GetLinkForLevel(link, Static:GetInfo(item, "toLevel")), "level")
         else
-            return Self.GetInfo(item, "realLevel", ...)
+            return Static:GetInfo(item, "realLevel")
         end
     -- isRelic
     elseif attr == "isRelic" then
-        return Self.GetInfo(item, "subType") == "Artifact Relic"
+        return Static:GetInfo(item, "subType") == "Artifact Relic"
     -- isEquippable
     elseif attr == "isEquippable" then
-        return IsEquippableItem(link or id) or Self.GetInfo(item, "isRelic")
+        return IsEquippableItem(link or id) or Static:GetInfo(item, "isRelic")
     -- From link
-    elseif Self.INFO.link[attr] then
-        if isInstance then
-            return item:GetLinkInfo()[attr]
+    elseif Static.INFO.link[attr] then
+        if self then
+            return self:GetLinkInfo()[attr]
         else
-            if type(Self.INFO.link[attr]) == "string" then
-                return select(3, link:find(Self.INFO.link[attr]))
+            link = link or Static:GetInfo(id, "link")
+            if type(Static.INFO.link[attr]) == "string" then
+                return select(3, link:find(Static.INFO.link[attr]))
             else
-                local info, i, numBonusIds, bonusIds = Self.INFO.link, 0, 1
+                local info, i, numBonusIds, bonusIds = Static.INFO.link, 0, 1
                 for v in link:gmatch(":(%-?%d*)") do
                     i = i + 1
                     if attr == "bonusIds" and i > info.numBonusIds then
@@ -282,29 +283,55 @@ function Self.GetInfo(item, attr, ...)
             end
         end
     -- From GetItemInfo()
-    elseif Self.INFO.basic[attr] then
-        if isInstance then
-            return item:GetBasicInfo()[attr]
+    elseif Static.INFO.basic[attr] then
+        if self then
+            return self:GetBasicInfo()[attr]
         else
-            return (select(Self.INFO.basic[attr], GetItemInfo(link or id)))
+            return (select(Static.INFO.basic[attr], GetItemInfo(link or id)))
         end
     -- From ScanTooltip()
-    elseif Self.INFO.full[attr] then
-        if isInstance then
-            return item:GetFullInfo()[attr]
+    elseif Static.INFO.full[attr] then
+        if self then
+            return self:GetFullInfo()[attr]
         else
+            link = link or Static:GetInfo(id, "link")
             local val = Util.ScanTooltip(fullScanFn, link, nil, attr)
             return val
-                or attr == "realLevel" and Self.GetInfo(item, "level")
-                or attr == "realMinLevel" and Self.GetInfo(item, "minLevel")
+                or attr == "realLevel" and Static:GetInfo(item, "level")
+                or attr == "realMinLevel" and Static:GetInfo(item, "minLevel")
                 or val
         end
     end
 end
 
+-- Check if the item is scaled
+function Self.IsScaled(Static, item)
+    if Static:GetInfo(item, "quality") == LE_ITEM_QUALITY_HEIRLOOM then
+        return true
+    else
+        local linkLevel = Static:GetInfo(item, "linkLevel")
+        local upgradeLevel = Static:GetInfo(item, "upgradeLevel")
+        return linkLevel and upgradeLevel and linkLevel ~= upgradeLevel
+    end
+end
+
+-- Check if the item should get special treatment for being a weapon
+function Self.IsWeapon(Static, item)
+    return Util.In(Static:GetInfo(item, "equipLoc"), Self.TYPES_WEAPON)
+end
+
 -------------------------------------------------------
 --                      Members                      --
 -------------------------------------------------------
+
+-- Create an item instance from a link or id
+function Self:Create(item, bagOrEquip, slot)
+    self.id = self.__index:GetInfo(item, "id")
+    self.link = self.__index:GetInfo(item, "link")
+    self.infoLevel = self.INFO_NONE
+    self.bagOrEquip = bagOrEquip
+    self.slot = slot
+end
 
 -- Get item info from a link
 function Self:GetLinkInfo()
@@ -388,7 +415,7 @@ function Self:GetFullInfo()
 
         -- Effective and max level
         self.realLevel = self.realLevel or self.level
-        self.maxLevel = self.quality == LE_ITEM_QUALITY_HEIRLOOM and Self.GetInfo(Self.GetLinkForLevel(self.link, self.toLevel), "level") or self.realLevel
+        self.maxLevel = self.quality == LE_ITEM_QUALITY_HEIRLOOM and self:GetInfo(Self.GetLinkForLevel(self.link, self.toLevel), "level") or self.realLevel
     end
 
     return self, self.infoLevel >= Self.INFO_FULL
@@ -415,28 +442,3 @@ function Self:OnLoaded(fn, ...)
 end
 
 -------------------- HELPER --------------------
-
--- Get the real (unscaled) item level
-function Self:GetRealLevel()
-    return Self.IsScalingActive(self.owner) and self:GetFullInfo().effectiveLevel or self:GetBasicInfo().level
-end
-
--- Check if the item should get special treatment for being a weapon
-function Self:IsWeapon()
-    return Util.In(self:GetBasicInfo().equipLoc, Self.TYPES_WEAPON)
-end
-
--- Check if the item is a Legion legendary
-function Self:IsLegionLegendary()
-    return Self.GetInfo(self, "expacId") == Self.EXPAC_LEGION and Self.GetInfo(self, "quality") == LE_ITEM_QUALITY_LEGENDARY
-end
-
--- Check if the item is a Legion artifact
-function Self:IsLegionArtifact()
-    return Self.GetInfo(self, "expacId") == Self.EXPAC_LEGION and Self.GetInfo(self, "quality") == LE_ITEM_QUALITY_ARTIFACT
-end
-
--- Check if the item has azerite traits
-function Self:IsAzeriteGear()
-    return self:GetBasicInfo().expacId == Self.EXPAC_BFA and self.quality >= LE_ITEM_QUALITY_RARE and Util.In(self.equipLoc, Self.TYPE_HEAD, Self.TYPE_SHOULDER, Self.TYPE_CHEST, Self.TYPE_ROBE)
-end

@@ -112,7 +112,7 @@ function Self.Update()
     -- LIST
 
     local it = Util.Iter(#header + 1)
-    local ops = Store.GetFactionCache(Store.CAT_OPERATION)
+    local ops = Store.GetFaction(Store.CAT_OPERATION)
     local items = ops and Util(ops).Copy().List()()
 
     if not items or #items == 0 then
@@ -170,7 +170,7 @@ function Self.Update()
 end
 
 function Self.OnAddClick(frame)
-    Models.Operation.Create()
+    print("ADD")
 end
 
 function Self.OnRemoveClick(frame)

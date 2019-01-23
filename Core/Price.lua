@@ -18,7 +18,7 @@ Self.METHODS = {Self.METHOD_MARKET, Self.METHOD_CRAFT, Self.METHOD_CONVERT}
 -- @return float Current min. price
 -- @return string Method used
 function Self.GetItemPrice(item, owned, stack)
-    local itemId, price, method, clear = tonumber(item) or tonumber(Models.Item.GetInfo(item, "id"))
+    local itemId, price, method, clear = tonumber(item) or tonumber(Models.Item:GetInfo(item, "id"))
 
     if not stack then
         stack, clear = Util.Tbl(), true
@@ -87,7 +87,7 @@ end
 -- @param table stack Item ids being looked up recursively to prevent loops
 -- @return float Current conversion price
 function Self.GetItemConvertPrice(item, owned, stack)
-    local id = tonumber(item) or Models.Item.GetInfo(item, "id")
+    local id = tonumber(item) or Models.Item:GetInfo(item, "id")
     local price
 
     for method,items in pairs(Addon.Data.Conversions) do
@@ -108,7 +108,7 @@ end
 -- @param int|string item Item id, string or link
 -- @return float Current conversion result price
 function Self.GetItemConvertValue(item)
-    item = Models.Item.Create(item):GetBasicInfo()
+    item = Models.Item:Decode(item):GetBasicInfo()
     local price, method
 
     for m,items in pairs(Addon.Data.Conversions) do
