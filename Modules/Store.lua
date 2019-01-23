@@ -5,9 +5,9 @@ local Self = Addon.Store
 -- Cache categories
 Self.CAT_GROUP = Models.Group.STORE
 Self.CAT_ITEM = Models.Item.STORE
-Self.CAT_OPERATION = Models.Operation.STORE
+Self.CAT_TASK = Models.Task.STORE
 Self.CAT_RECIPE = Models.Recipe.STORE
-Self.CAT_TASK = "TASK" -- TODO
+Self.CAT_OPERATION = Models.Operation.STORE
 
 Self.CAT_CHAR = "CHAR"
 Self.CAT_CRAFT = "CRAFT"
@@ -141,14 +141,14 @@ CRAFT:
                     id: recipes
 RECIPE:
     id: recipe
-OPERATION:
-    realm:
-        faction:
-            id: operation
 TASK:
     realm:
         faction:
             id: task
+OPERATION:
+    realm:
+        faction:
+            id: operation
 ITEM:
     realm:
         faction:

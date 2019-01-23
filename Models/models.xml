@@ -5,4 +5,5 @@
     <Script file="Item.lua"/>
     <Script file="Operation.lua"/>
     <Script file="Recipe.lua"/>
+    <Script file="Task.lua"/>
 </Ui>

@@ -26,6 +26,7 @@ Addon.Models = {
     Item = {},
     Operation = {},
     Recipe = {},
+    Task = {},
 }
 
 -- Util
@@ -44,9 +45,9 @@ Addon.Store = Addon:NewModule("Store", nil, "AceEvent-3.0", "AceHook-3.0")
 -- GUI
 Addon.GUI = {
     Main = {
-        Operations = Addon:NewModule("Operations"),
+        Tasks = Addon:NewModule("Tasks"),
         Items = Addon:NewModule("Items"),
-        Characters = Addon:NewModule("Characters")
+        Characters = Addon:NewModule("Characters"),
     },
     Tooltip = Addon:NewModule("Tooltip", nil, "AceHook-3.0")
 }

@@ -2,7 +2,7 @@ local Name, Addon = ...
 local L = LibStub("AceLocale-3.0"):GetLocale(Name)
 local AceGUI = LibStub("AceGUI-3.0")
 local GUI, Models, Options, Store, Util = Addon.GUI, Addon.Models, Addon.Options, Addon.Store, Addon.Util
-local Self = GUI.Main.Operations
+local Self = GUI.Main.Tasks
 
 Self.frames = {}
 
@@ -57,7 +57,7 @@ function Self.Update()
         -- List title
         title = GUI("Label")
             .SetFontObject(GameFontNormalLarge)
-            .SetText(L["OPERATIONS"])
+            .SetText(L["TASKS"])
             .AddTo(parent)
             .SetPoint("TOPLEFT", 3, -3)()
 
@@ -112,7 +112,7 @@ function Self.Update()
     -- LIST
 
     local it = Util.Iter(#header + 1)
-    local ops = Store.GetFaction(Store.CAT_OPERATION)
+    local ops = Store.GetFaction(Store.CAT_TASK)
     local items = ops and Util(ops).Copy().List()()
 
     if not items or #items == 0 then

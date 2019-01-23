@@ -4,10 +4,10 @@ local AceGUI = LibStub("AceGUI-3.0")
 local GUI, Options, Store, Util = Addon.GUI, Addon.Options, Addon.Store, Addon.Util
 local Self = GUI.Main
 
-Self.TAB_OPERATIONS = "Operations"
+Self.TAB_TASKS = "Tasks"
 Self.TAB_ITEMS = "Items"
 Self.TAB_CHARACTERS = "Characters"
-Self.TABS = {Self.TAB_OPERATIONS, Self.TAB_ITEMS, Self.TAB_CHARACTERS}
+Self.TABS = {Self.TAB_TASKS, Self.TAB_ITEMS, Self.TAB_CHARACTERS}
 
 Self.frames = {}
 Self.status = {width = 700, height = 300}
@@ -91,7 +91,7 @@ function Self.Show(tab)
 
         for i,tab in ipairs(Self.TABS) do
             local tex = Util.Select(tab,
-                Self.TAB_OPERATIONS, "INV_Eng_GearspringParts",
+                Self.TAB_TASKS, "INV_Eng_GearspringParts",
                 Self.TAB_ITEMS, "INV_Misc_PaperPackage01b",
                 Self.TAB_CHARACTERS, "Ability_Mage_MassInvisibility"
             )
@@ -109,7 +109,7 @@ function Self.Show(tab)
 
         Self.frames.main = main
 
-        tab = tab or Self.TAB_OPERATIONS
+        tab = tab or Self.TAB_TASKS
     end
     
     Self.frames.window.frame:Show()
