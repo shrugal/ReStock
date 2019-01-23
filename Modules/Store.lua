@@ -68,14 +68,13 @@ end
 -- Increment stock count for an item
 function Self.IncItemCount(cache, item, inc)
     local id = tonumber(item) or Models.Item:GetInfo(item, "id")
-    inc = inc or 1
 
-    if id and inc and not (
+    if id and not (
         Self.IGNORE[Self.CAT_STOCK][id]
         or Models.Item:GetInfo(item, "type") == "Quest"
         or Models.Item:GetInfo(item, "quality") == LE_ITEM_QUALITY_POOR
     ) then
-        local count = (cache and cache[id] or 0) + inc
+        local count = (cache and cache[id] or 0) + (inc or 1)
         if count > 0 or cache then
             cache = cache or Util.Tbl()
             cache[id] = count > 0 and count or nil
@@ -216,8 +215,8 @@ function Self.UpdateBag(bag)
 
     if GetContainerNumSlots(bag) > 0 then
         for slot=1,GetContainerNumSlots(bag) do
-            local id, count = GetContainerItemID(bag, slot), select(2, GetContainerItemInfo(bag, slot))
-            cache = Self.IncItemCount(cache, id, count)
+            local link, count = GetContainerItemLink(bag, slot), select(2, GetContainerItemInfo(bag, slot))
+            cache = Self.IncItemCount(cache, link, count)
         end
 
         Self.SetUnit(Self.CAT_STOCK, bag, cache)

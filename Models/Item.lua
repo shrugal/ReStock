@@ -214,8 +214,8 @@ local scanFn = function (i, line, lines, attr)
 end
 
 function Self.GetInfo(Static, item, attr)
-    item = attr and item or Static
-    Static = rawget(Static, "__index") and Static or getmetatable(Static)
+    item = attr and item or Util.TblIsInstanceOf(Static, Self) and Static
+    Static = Util.TblGetClass(Static)
     attr = attr or item
 
     local self, id, link = type(item) == "table" and item
@@ -326,11 +326,11 @@ end
 
 -- Create an item instance from a link or id
 function Self:Create(item, bagOrEquip, slot)
-    self.id = self.__index:GetInfo(item, "id")
-    self.link = self.__index:GetInfo(item, "link")
-    self.infoLevel = self.INFO_NONE
+    self.id = self:GetInfo(item, "id")
+    self.link = self:GetInfo(item, "link")
     self.bagOrEquip = bagOrEquip
     self.slot = slot
+    self.infoLevel = self.INFO_NONE
 end
 
 -- Get item info from a link

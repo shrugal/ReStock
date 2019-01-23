@@ -288,6 +288,10 @@ function Self.TblClass(super, self)
     return setmetatable(self, super), super
 end
 
+function Self.TblGetClass(self)
+    return rawget(self, "__index") and self or getmetatable(self)
+end
+
 function Self.TblIsClassOf(self, super)
     super = super or Self.TBL_CLASS
     while type(self) == "table" do
