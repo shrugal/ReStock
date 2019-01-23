@@ -35,3 +35,6 @@ L["TIP_MINIMAP_ICON"] = "TIP_MINIMAP_ICON"
 L["VENDOR"] = "Vendor"
 L["TASKS"] = "Tasks"
 L["DETAILS"] = "Details"
+
+-- Other
+L[""] = ""

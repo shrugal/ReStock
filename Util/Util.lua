@@ -312,7 +312,7 @@ function Self.TblGet(t, ...)
     local n, path = select("#", ...), ...
    
     if n == 1 and type(path) == "string" and path:find("%.") then
-        path = Self.TblTmp(("."):split((...)))
+        path = Self.TblMap(Self.TblTmp(strsplit(".", path)), Self.StrParse)
     elseif type(path) ~= "table" then
         path = Self.TblTmp(...)
     end
@@ -334,7 +334,7 @@ function Self.TblSet(t, ...)
     local val = select(n, ...)
    
     if n == 2 and type(path) == "string" and path:find("%.") then
-        path = Self.TblTmp(("."):split((...)))
+        path = Self.TblMap(Self.TblTmp(strsplit(".", path)), Self.StrParse)
     elseif type(path) ~= "table" then
         path = Self.TblTmp(...)
         tremove(path)
@@ -1035,6 +1035,10 @@ end
 --                       String                      --
 -------------------------------------------------------
 
+function Self.StrParse(str)
+    return tonumber(str) or Self.Select(str:lower(), "true", true, "false", false, str)
+end
+
 function Self.IsStr(str)
     return type(str) == "string"
 end
@@ -1076,7 +1080,7 @@ end
 function Self.StrJoin(del, ...)
     local s = ""
     for _,v in Self.Each(...) do
-        if not Self.StrIsEmpty(v) then
+        if v and v ~= "" then
             s = s .. (s == "" and "" or del or " ") .. v
         end
     end

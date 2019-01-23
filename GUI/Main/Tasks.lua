@@ -4,7 +4,13 @@ local AceGUI = LibStub("AceGUI-3.0")
 local GUI, Models, Options, Store, Util = Addon.GUI, Addon.Models, Addon.Options, Addon.Store, Addon.Util
 local Self = GUI.Main.Tasks
 
+Self.COLOR_SELECTED = {1, 1, 1, .5}
+Self.COLOR_CHECKED = {1, 1, 1, .2}
+
 Self.frames = {}
+Self.checked = {}
+Self.selected = nil
+Self.tasks = Util.Tbl()
 
 -------------------------------------------------------
 --                     Show/Hide                     --
@@ -46,12 +52,10 @@ end
 function Self.Update()
     local parent = Self.frames.container
     local detailsWidth = 300
-    local header = Util.Tbl("ID", "ITEMS", "CHARACTER", "LOCATION", "AMOUNT")
+    local header = Util.Tbl("", "ITEMS", "CHARACTER", "LOCATION", "AMOUNT")
 
-    local children = parent.children
-    local list, details = unpack(children)
-
-    if #children == 0 then
+    local list, details = Self.frames.list, Self.frames.details
+    if #parent.children == 0 then
         local title, btn
 
         -- List title
@@ -85,7 +89,18 @@ function Self.Update()
             .AddTo(parent)
             .SetPoint("TOPLEFT", title.frame, "BOTTOMLEFT", 0, -5)
             .SetPoint("BOTTOMRIGHT", -detailsWidth, 0)
+            .SetCallback("OnRowClick", function (self, _, row, btn)
+                local task = Self.tasks[row]
+                if task and btn == "LeftButton" then
+                    Self.Select(task)
+                end
+            end)
             .PauseLayout()()
+        GUI.TableRowBackground(list, Self.ListRowBackground, #header)
+        GUI.TableRowHighlight(list, #header)
+        GUI.TableRowClick(list, #header)
+
+        Self.frames.list = list
 
         -- List header
         for i,v in ipairs(header) do
@@ -105,55 +120,76 @@ function Self.Update()
             .AddTo(parent)
             .SetPoint("TOPLEFT", title.frame, "BOTTOMLEFT")
             .SetPoint("BOTTOMRIGHT")()
+
+        Self.frames.details = details
     else
         list:PauseLayout()
     end
 
     -- LIST
 
-    local it = Util.Iter(#header + 1)
-    local ops = Store.GetFaction(Store.CAT_TASK)
-    local items = ops and Util(ops).Copy().List()()
+    local children = list.children
+    local it = Util.Iter(#header)
 
-    if not items or #items == 0 then
+    Util.TblRelease(Self.tasks)
+    Self.tasks = Models.Task:Query().List()()
+
+    if not Self.tasks or #Self.tasks == 0 then
         -- TODO
     else
-        for i,item in ipairs(items) do
+        for i,task in ipairs(Self.tasks) do
             if not children[it(0) + 1] then
-                -- ID
-                GUI("Label").SetFontObject(GameFontNormal).AddTo(list)()
+                -- Checkbox
+                local cb = GUI("CheckBox")
+                    .SetWidth(14).SetHeight(14)
+                    .SetCallback("OnValueChanged", function (self)
+                        local id = self:GetUserData("id")
+                        if id then
+                            Self.checked[id] = self:GetValue() and true or nil
+                            list:UpdateRowBackgrounds()
+                        end
+                    end)
+                    .AddTo(list)()
+                cb.checkbg:SetSize(14, 14)
+                cb.checkbg:SetPoint("TOPLEFT", 2, 0)
+                cb.checkbg:SetTexCoord(0.15, 0.85, 0.15, 0.85)
+                cb.check:SetTexCoord(0.15, 0.85, 0.15, 0.85)
+                cb.OnRelease = GUI.ResetCheckBox
             
-                -- Items
+                -- Item
                 GUI.CreateItemLabel(list, "ANCHOR_RIGHT")
                 
                 -- Character
-                GUI("Label").SetFontObject(GameFontNormal).AddTo(list)()
+                GUI("Label").SetFontObject(GameFontNormal).AddTo(list)
 
                 -- Location
-                GUI("Label").SetFontObject(GameFontNormal).AddTo(list)()
+                GUI("Label").SetFontObject(GameFontNormal).AddTo(list)
 
                 -- Amount
-                GUI("Label").SetFontObject(GameFontNormal).AddTo(list)()
+                GUI("Label").SetFontObject(GameFontNormal).AddTo(list)
             end
 
-            -- ID
-            GUI(children[it()]).SetText(item.id).Show()
-
-            -- Items
+            -- Checkbox
             GUI(children[it()])
-                .SetImage(roll.item.texture)
-                .SetText(roll.item.link)
-                .SetUserData("link", roll.item.link)
+                .SetValue(Self.checked[task.id])
+                .SetUserData("id", task.id)
+                .Show()
+
+            -- Item
+            GUI(children[it()])
+                .SetImage(task.item and task.item.texture or "")
+                .SetText(task.item and task.item.link or "-")
+                .SetUserData("link", task.item and task.item.link or nil)
                 .Show()
 
             -- Character
-            GUI(children[it()]).SetText(item.char).Show()
+            GUI(children[it()]).SetText(task.char).Show()
 
             -- Location
-            GUI(children[it()]).SetText(item.loc).Show()
+            GUI(children[it()]).SetText(task.loc).Show()
 
             -- Amount
-            GUI(children[it()]).SetText(item.amount).Show()
+            GUI(children[it()]).SetText(task.amount).Show()
         end
     end
 
@@ -164,15 +200,42 @@ function Self.Update()
     end
 
     -- Cleanup and layout
-    Util.TblRelease(items, header)
+    Util.TblRelease(header)
     list:ResumeLayout()
     list:DoLayout()
 end
 
+function Self.Select(task)
+    task = Models.Task:Decode(task)
+    if not task then return end
+
+    Self.selected = task.id
+
+    if Self.frames.list then
+        Self.frames.list:UpdateRowBackgrounds()
+    end
+end
+
+function Self.ListRowBackground(self, row)
+    local task = Self.tasks[row]
+    return task and (
+        task.id == Self.selected and Self.COLOR_SELECTED
+        or Self.checked[task.id] and Self.COLOR_CHECKED
+    )
+end
+
 function Self.OnAddClick(frame)
-    print("ADD")
+    Models.Task():Store()
+    Self.Update()
 end
 
 function Self.OnRemoveClick(frame)
-    print("REMOVE")
+    for id in pairs(Self.checked) do
+        local task = Models.Task:Fetch(id)
+        if task then
+            task:Remove():Release()
+        end
+    end
+    wipe(Self.checked)
+    Self.Update()
 end

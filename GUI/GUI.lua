@@ -13,6 +13,9 @@ tex:SetTexture("Interface\\Buttons\\UI-Listbox-Highlight")
 tex:SetVertexColor(1, 1, 1, .5)
 tex:SetAllPoints(Self.HIGHLIGHT)
 
+-- Row backgrounds
+Self.ROW_BACKGROUND_DEFAULT = {1, 1, 1, .5}
+
 -------------------------------------------------------
 --                  Popup dialogs                    --
 -------------------------------------------------------
@@ -224,6 +227,14 @@ function Self.ResetInlineGroup(self)
     self.OnRelease = nil
 end
 
+function Self.ResetCheckBox(self)
+    self.checkbg:SetSize(24, 24)
+    self.checkbg:SetPoint("TOPLEFT")
+    self.checkbg:SetTexCoord(0, 1, 0, 1)
+    self.check:SetTexCoord(0, 1, 0, 1)
+    self.OnRelease = nil
+end
+
 function Self.ShowExportWindow(title, text)
     local f = Self("Frame").SetLayout("Fill").SetTitle(Name .. " - " .. title).Show()()
     Self("MultiLineEditBox").DisableButton(true).SetLabel().SetText(text).AddTo(f)
@@ -282,24 +293,19 @@ function Self.TableRowHighlight(parent, skip)
         self.frame:SetScript("OnEnter", nil)
         self.frame:SetScript("OnUpdate", nil)
         self.OnRelease = OnRelease
-        if self.OnRelease then self.OnRelease(self, ...) end
+        if OnRelease then OnRelease(self, ...) end
     end
 end
 
 -- Add row-backgrounds to a table
 function Self.TableRowBackground(parent, colors, skip)
-    local default = {1, 1, 1, 0.5}
-    colors = colors or default
+    colors = colors or Self.ROW_BACKGROUND_DEFAULT
     skip = skip or 0
     local tblObj = parent:GetUserData("table")
     local spaceV = tblObj.spaceV or tblObj.space or 0
-    local textures = {}
-    TEX = textures -- TODO
+    local textures = Util.Tbl()
 
-    local LayoutFinished = parent.LayoutFinished
-    parent.LayoutFinished = function (self, ...)
-        if LayoutFinished then LayoutFinished(self, ...) end
-
+    parent.UpdateRowBackgrounds = function (self)
         Util.TblCall(textures, "Hide")
 
         local frameTop, frameBottom = parent.frame:GetTop(), parent.frame:GetBottom()
@@ -331,7 +337,7 @@ function Self.TableRowBackground(parent, colors, skip)
                             .SetPoint("RIGHT")
                             .SetPoint("TOP", 0, top - frameTop)
                             .SetHeight(top - bottom)
-                            .SetColorTexture(unpack(color == true and default or color))
+                            .SetColorTexture(unpack(color == true and Self.ROW_BACKGROUND_DEFAULT or color))
                             .Show()
                         tex = tex + 1
                     end
@@ -349,12 +355,62 @@ function Self.TableRowBackground(parent, colors, skip)
         end
     end
 
+    local LayoutFinished = parent.LayoutFinished
+    parent.LayoutFinished = function (self, ...)
+        if LayoutFinished then LayoutFinished(self, ...) end
+        parent.UpdateRowBackgrounds(self)
+    end
+
     local OnRelease = parent.OnRelease
     parent.OnRelease = function (self, ...)
         Util.TblCall(textures, "Hide")
         self.LayoutFinished = LayoutFinished
+        self.UpdateRowBackgrounds = nil
         self.OnRelease = OnRelease
-        if self.OnRelease then self.OnRelease(self, ...) end
+        if OnRelease then OnRelease(self, ...) end
+    end
+end
+
+-- Add row click callback to a table
+function Self.TableRowClick(parent, skip)
+    skip = skip or 0
+    local tblObj = parent:GetUserData("table")
+    local spaceV = tblObj.spaceV or tblObj.space or 0
+    local clicked = Util.Tbl()
+
+    parent.frame:SetScript("OnMouseDown", function (self, btn)
+        clicked[btn] = true
+    end)
+
+    parent.frame:SetScript("OnMouseUp", function (self, btn, inside, ...)
+        if inside and clicked[btn] then
+            local cY = select(2, GetCursorPosition()) / UIParent:GetEffectiveScale()
+            local row, left = 0
+
+            for i=skip+1,#parent.children do
+                local child = parent.children[i]
+                local top, bottom, childLeft = child.frame:GetTop(), child.frame:GetBottom(), child.frame:GetLeft()
+
+                if top and bottom and childLeft then
+                    if not left or childLeft <= left then
+                        row, left = row + 1, childLeft
+                    end
+
+                    if top and bottom and Util.NumIn(cY, bottom - spaceV/2, top + spaceV/2) then
+                        parent:Fire("OnRowClick", row, btn) break
+                    end
+                end
+            end
+        end
+        clicked[btn] = nil
+    end)
+
+    local OnRelease = parent.OnRelease
+    parent.OnRelease = function (self, ...)
+        self:SetScript("OnMouseDown", nil)
+        self:SetScript("OnMouseUp", nil)
+        self.OnRelease = OnRelease
+        if OnRelease then OnRelease(self, ...) end
     end
 end
 

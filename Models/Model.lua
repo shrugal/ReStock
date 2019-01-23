@@ -16,7 +16,8 @@ end
 
 -- Start querying the list of models
 function Self.Query(Static, ...)
-    return Util(Static:Find(...)).Copy()
+    local t = Static:Find(...)
+    return t and Util(t).Copy() or Util.Tbl()
 end
 
 -- Fetch a model from the store
