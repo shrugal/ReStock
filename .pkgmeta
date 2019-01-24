@@ -1,0 +1,15 @@
+package-as: ReStock
+manual-changelog:
+    filename: CHANGELOG.md
+    markup-type: markdown
+license-output: LICENSE
+enable-nolib-creation: no
+
+ignore:
+    - release.sh
+    - _config.yml
+
+externals:
+    Libs/LibDataBroker-1.1:
+        url: https://github.com/tekkub/libdatabroker-1-1
+        tag: v1.1.4

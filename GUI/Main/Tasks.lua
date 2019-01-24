@@ -216,6 +216,10 @@ function Self.Select(task)
     end
 end
 
+-------------------------------------------------------
+--                       Helper                      --
+-------------------------------------------------------
+
 function Self.ListRowBackground(self, row)
     local task = Self.tasks[row]
     return task and (
@@ -223,6 +227,10 @@ function Self.ListRowBackground(self, row)
         or Self.checked[task.id] and Self.COLOR_CHECKED
     )
 end
+
+-------------------------------------------------------
+--                       Events                      --
+-------------------------------------------------------
 
 function Self.OnAddClick(frame)
     Models.Task():Store()
